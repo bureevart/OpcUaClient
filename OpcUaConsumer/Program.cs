@@ -5,15 +5,14 @@ using OpcUaConsumer.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Configuration
-    .AddJsonFile("appsettings.json");
-
 var rabbitSettings = builder.Configuration.GetSection("RabbitMQ");
 var options = rabbitSettings.Get<RabbitSettings>();
 builder.Services.Configure<RabbitSettings>(rabbitSettings);
-
 builder.Services.AddOptions<RabbitMqTransportOptions>()
     .Configure(o =>
     {
@@ -35,17 +34,14 @@ builder.Services.AddMassTransit(x =>
 
 builder.Services.AddControllers().AddJsonOptions(x =>
     x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+
+app.UseSwagger();
+app.UseSwaggerUI();
+
 
 app.UseHttpsRedirection();
 

@@ -1,0 +1,60 @@
+﻿services:
+  opcuaclient:
+    image: opcuaclient
+    build:
+      context: .
+      dockerfile: OpcUaClient/Dockerfile
+    environment:
+      OpcUaSettings__Host: 192.168.101.6
+      OpcUaSettings__Port: 4840
+      OpcUaSettings__OpcNameSpace: 2
+      OpcUaSettings__SessionRenewalRequired: false
+      RabbitMQ__User: user
+      RabbitMQ__Password: user
+      RabbitMQ__Server: rabbitmq
+      RabbitMQ__VirtualHost: /
+    ports:
+      - "5137:5137"
+    networks:
+      - my_network
+  opcuaconsumer:
+    image: opcuaconsumer
+    build:
+      context: .
+      dockerfile: OpcUaConsumer/Dockerfile
+    environment:
+      RabbitMQ__User: user
+      RabbitMQ__Password: user
+      RabbitMQ__Server: rabbitmq
+      RabbitMQ__VirtualHost: /
+    ports:
+      - "5124:5124" 
+    networks:
+      - my_network
+  rabbitmq:
+    image: rabbitmq:4.0.4-management
+    container_name: rabbitmq
+    pull_policy: always
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "ping" ] # Проверяет, запущен ли RabbitMQ
+      interval: 10s # Интервал между проверками
+      timeout: 5s # Время ожидания ответа
+      retries: 5 # Количество попыток
+      start_period: 30s # Время ожидания до первой проверки (добавьте для долгих запусков)
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: user
+    ports:
+      - "15672:15672" # порт для веб-интерфейса управления 
+      - "5672:5672" # порт для стандартных AMQP соединений
+    volumes:
+      - rabbit_data:/var/lib/rabbitmq/data
+    restart: always
+    networks:
+      - my_network
+volumes:
+  rabbit_data:
+    driver: local
+networks:
+  my_network:
+    driver: bridge
