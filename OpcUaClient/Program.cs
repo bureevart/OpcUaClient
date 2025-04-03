@@ -3,9 +3,8 @@ using OpcUaClient.Options;
 using OpcUaClient.Services;
 using OpcUaClient.Services.Interfaces;
 using MassTransit;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
+using OpcUaClient.Extensions;
+using OpcUaClient.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +15,15 @@ builder.Services.AddControllers().AddJsonOptions(x =>
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddDataAccessLayer(builder.Configuration);
+
+const string origin = "MyAllowSpecificOrigins";
+builder.Services.AddCorsPolicy(builder.Configuration, origin);
+
+builder.Services.AddSerilogLogging();
+builder.Services.AddFluentValidation();
+builder.Services.AddAutoMapper(typeof(Program).Assembly);
+
 
 var rabbitSettings = builder.Configuration.GetSection("RabbitMQ");
 var options = rabbitSettings.Get<RabbitSettings>();
@@ -38,8 +46,13 @@ builder.Services.AddSingleton<IOpcUaService, OpcUaService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+app.UseCors(origin);
+
 app.UseSwagger();
 app.UseSwaggerUI();
+
+app.UseCustomLoggingHandler();
+app.UseCustomExceptionHandler();
 
 app.UseHttpsRedirection();
 

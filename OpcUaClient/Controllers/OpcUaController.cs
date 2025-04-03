@@ -10,9 +10,7 @@ using StatusCodes = Microsoft.AspNetCore.Http.StatusCodes;
 
 namespace OpcUaClient.Controllers;
 
-[ApiController]
-[Route("api/[controller]/[action]")]
-public class OpcUaController
+public class OpcUaController : BaseController
 {
 
     private readonly IOpcUaService OpcUaService;
