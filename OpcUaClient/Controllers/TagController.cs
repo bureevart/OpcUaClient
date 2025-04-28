@@ -1,14 +1,14 @@
 using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using OpcUaClient.Domain.Interfaces.Providers;
 using OpcUaClient.Domain.Models;
 using OpcUaClient.Models.TagModels;
+using OpcUaClient.Services.Interfaces;
 
 namespace OpcUaClient.Controllers;
 
-public class TagController(ITagCrudProvider crudProvider, IValidator<Tag> validator, IMapper mapper, IConfiguration configuration) : BaseEntityController<Tag>
+public class TagController(ITagCrudProvider crudProvider, IValidator<Tag> validator, IMapper mapper, IOpcUaService opcUaService) : BaseEntityController<Tag>
 {
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -39,6 +39,8 @@ public class TagController(ITagCrudProvider crudProvider, IValidator<Tag> valida
         }
         
         await crudProvider.Create(obj);
+        
+        opcUaService.AddMonitoringItem(obj);
         return obj.Id;
     }
     
@@ -74,21 +76,13 @@ public class TagController(ITagCrudProvider crudProvider, IValidator<Tag> valida
         
         await crudProvider.Update(obj, 
             tag => tag.Name,
-            tag => tag.Comment,
-            tag => tag.Active,
-            tag => tag.Address,
-            tag => tag.Type,
-            tag => tag.Factor,
-            tag => tag.Offset,
-            tag => tag.Recalc,
-            //tag => tag.Value,
-            tag => tag.HasWriteRegister,
-            tag => tag.WriteRegisterAddress,
-            tag => tag.OutputType,
-            tag => tag.UseOutputType,
-            tag => tag.RoundingAccuracy,
-            tag => tag.ConvertBeforeRecalcForRead,
-            tag => tag.ConvertBeforeRecalcForWrite);
+            tag => tag.LastUpdatedTime,
+            tag => tag.LastSourceTimeStamp,
+            tag => tag.StatusCode,
+            tag => tag.LastGoodValue ?? string.Empty,
+            tag => tag.CurrentValue ?? string.Empty,
+            tag => tag.NodeId,
+            tag => tag.DisplayName);
         
         return obj.Id;
     }
@@ -98,5 +92,13 @@ public class TagController(ITagCrudProvider crudProvider, IValidator<Tag> valida
     public async Task<ActionResult<Guid>> Delete(Guid id)
     {
         return await crudProvider.Delete(id);
+    }
+    
+    [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<TagShortViewModel>> GetValue(Guid id)
+    {
+        var result = await crudProvider.GetValue(id);
+        return mapper.Map<TagShortViewModel>(result);
     }
 }

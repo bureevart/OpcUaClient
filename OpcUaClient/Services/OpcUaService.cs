@@ -1,14 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using MassTransit;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
+﻿using MassTransit;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Configuration;
-using OpcUaClient.Model;
+using OpcUaClient.Domain.Interfaces.Services;
+using OpcUaClient.Domain.Models;
+using OpcUaClient.Services.Cache;
 using OpcUaClient.Services.Interfaces;
 using SharedModels;
 
@@ -22,7 +18,7 @@ public class OpcUaService : IOpcUaService
     public string MyApplicationName { get; set; } = nameof(OpcUaClient);
     public Session? Session { get; set; }
     public string OpcNameSpace { get; set; }
-    public Dictionary<string, TagClass> TagList { get; set; } = new Dictionary<string, TagClass>();
+    private ITagCacheService _tagCacheService { get; set; }
     public bool SessionRenewalRequired { get; set; }
     public DateTime LastTimeSessionRenewed { get; set; }
     public DateTime LastTimeOpcServerFoundAlive { get; set; }
@@ -33,9 +29,10 @@ public class OpcUaService : IOpcUaService
     
     private readonly IServiceScopeFactory _serviceScopeFactory;
     
-    public OpcUaService(IConfiguration configuration, IServiceScopeFactory serviceScopeFactory)
+    public OpcUaService(IConfiguration configuration, IServiceScopeFactory serviceScopeFactory, ITagCacheService tagCacheService)
     {
         _serviceScopeFactory = serviceScopeFactory;
+        _tagCacheService = tagCacheService;
         
         ServerAddress = configuration.GetSection("OpcUaSettings")["Host"] ?? string.Empty;
         ServerPortNumber = configuration.GetSection("OpcUaSettings")["Port"] ?? string.Empty;
@@ -117,21 +114,21 @@ public class OpcUaService : IOpcUaService
         }
     }
 
-    public void AddMonitoringItem(TagClass tag)
+    public void AddMonitoringItem(Tag tag)
     {
-        if(TagList.Count(t => tag.NodeID == t.Value.NodeID) != 0) return;
-        
+        if(_tagCacheService.GetTag(tag.DisplayName) is not null) 
+                return;
         var subscription = Session?.Subscriptions.FirstOrDefault();
         var item = new MonitoredItem(subscription?.DefaultItem)
             { 
                 DisplayName = tag.DisplayName, 
-                StartNodeId = "ns=" + OpcNameSpace + ";i=" + tag.NodeID
+                StartNodeId = "ns=" + OpcNameSpace + ";i=" + tag.NodeId
             };
         subscription?.AddItem(item);
         item.Notification += OnTagValueChange;
         
         subscription?.ApplyChanges();
-        TagList.Add(tag.DisplayName, tag);
+        _tagCacheService.SetTag(tag.DisplayName, tag);
     }
     
     private void RenewSessionThread()
@@ -191,7 +188,6 @@ public class OpcUaService : IOpcUaService
             if (item.DisplayName == "ServerStatusCurrentTime")
             {
                 LastTimeOpcServerFoundAlive = value.SourceTimestamp.ToLocalTime();
-
             }
             else
             {
@@ -200,30 +196,30 @@ public class OpcUaService : IOpcUaService
                 else
                     Console.WriteLine("{0}: {1}, {2}, {3}", item.DisplayName, "Null Value", value.SourceTimestamp, value.StatusCode);
 
-                if (TagList.ContainsKey(item.DisplayName))
+                var tag = _tagCacheService.GetTag(item.DisplayName);
+                
+                if (tag is not null)
                 {
                     if (value.Value != null)
                     {
-                        TagList[item.DisplayName].LastGoodValue = value.Value.ToString();
-                        TagList[item.DisplayName].CurrentValue = value.Value.ToString();
-                        TagList[item.DisplayName].LastUpdatedTime = DateTime.Now;
-                        TagList[item.DisplayName].LastSourceTimeStamp = value.SourceTimestamp.ToLocalTime();
-                        TagList[item.DisplayName].StatusCode = value.StatusCode.ToString();
-
+                        tag.LastGoodValue = value.Value.ToString();
+                        tag.CurrentValue = value.Value.ToString();
+                        tag.LastUpdatedTime = DateTime.Now;
+                        tag.LastSourceTimeStamp = value.SourceTimestamp.ToLocalTime();
+                        tag.StatusCode = value.StatusCode.ToString();
                     }
                     else
                     {
-                        TagList[item.DisplayName].StatusCode = value.StatusCode.ToString();
-                        TagList[item.DisplayName].CurrentValue = null;
+                        tag.StatusCode = value.StatusCode.ToString();
+                        tag.CurrentValue = null;
                     }
-
+                    _tagCacheService.SetTag(tag.DisplayName, tag);
                 }
 
                 try
                 {
                     using var scope = _serviceScopeFactory.CreateScope();
-                    var publishEndpoint =
-                        scope.ServiceProvider.GetRequiredService<IPublishEndpoint>();
+                    var publishEndpoint = scope.ServiceProvider.GetRequiredService<IPublishEndpoint>();
 
                     publishEndpoint.Publish<TagModel>(new TagModel()
                     {

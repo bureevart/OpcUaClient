@@ -1,12 +1,14 @@
 ﻿using FluentValidation;
+using MassTransit.Caching;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using OpcUaClient.DataAccessLayer;
 using OpcUaClient.Domain.Interfaces;
 using OpcUaClient.Domain.Interfaces.Providers;
+using OpcUaClient.Domain.Interfaces.Services;
 using OpcUaClient.Domain.Providers;
 using OpcUaClient.Domain.Validation;
-using RabbitMQ.Client;
+using OpcUaClient.Services.Cache;
 using Serilog;
 using Serilog.Events;
 
@@ -76,5 +78,33 @@ public static class ServiceCollectionExtensions
         services.AddValidatorsFromAssemblyContaining<TagValidator>();
         
         return services;
+    }
+    
+    public static void AddCache(this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        var cacheSettings = GetCacheSettings(configuration);
+        
+        services.AddMemoryCache();
+
+        services.AddSingleton<ITagCacheService, TagCacheService>(provider =>
+        {
+            var memoryCache = provider.GetRequiredService<IMemoryCache>();
+            var memoryCacheService = new TagCacheService(
+                memoryCache,
+                cacheSettings);
+
+            return memoryCacheService;
+        });
+    }
+    
+    private static Services.Cache.Configurations.CacheSettings GetCacheSettings(IConfiguration configuration)
+    {
+        var cacheService = configuration
+                               .GetSection("Cache:CacheService")
+                               .Get<Services.Cache.Configurations.CacheSettings>() 
+                           ?? throw new Exception();
+        
+        return cacheService;
     }
 }

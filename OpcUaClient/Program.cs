@@ -42,6 +42,7 @@ builder.Services.AddMassTransit(x =>
     x.UsingRabbitMq();
 });
 
+builder.Services.AddCache(builder.Configuration);
 builder.Services.AddSingleton<IOpcUaService, OpcUaService>();
 
 var app = builder.Build();
