@@ -3,6 +3,7 @@ using OpcUaClient.Options;
 using OpcUaClient.Services;
 using OpcUaClient.Services.Interfaces;
 using MassTransit;
+using OpcUaClient.DataAccessLayer;
 using OpcUaClient.Extensions;
 using OpcUaClient.Middleware;
 
@@ -46,6 +47,12 @@ builder.Services.AddSingleton<IOpcUaService, OpcUaService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<ServiceDbContext>();
+    DbInitializer.Initialize(context);
+}
+
 app.UseCors(origin);
 
 app.UseSwagger();
