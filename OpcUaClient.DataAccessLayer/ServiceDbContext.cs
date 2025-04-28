@@ -9,6 +9,8 @@ namespace OpcUaClient.DataAccessLayer;
 public class ServiceDbContext(DbContextOptions<ServiceDbContext> options) : DbContext(options), IServiceDbContext
 {
     public DbSet<Tag> Tags { get; set; }
+    public DbSet<Server> Servers { get; set; }
+
 
     public string? GetConnectionString() => base.Database.GetConnectionString();
 

@@ -1,5 +1,4 @@
 ﻿using FluentValidation;
-using MassTransit.Caching;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using OpcUaClient.DataAccessLayer;
@@ -44,6 +43,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IServiceDbContext>(provider =>
             provider.GetService<ServiceDbContext>() ?? throw new InvalidOperationException());
 
+        services.AddScoped<IServerCrudProvider, ServerCrudProvider>();
         services.AddScoped<ITagCrudProvider, TagCrudProvider>();
 
         return services;

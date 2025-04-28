@@ -7,6 +7,7 @@ namespace OpcUaClient.Domain.Interfaces;
 public interface IServiceDbContext : IDisposable
 {
     public DbSet<Tag> Tags { get; set; }
+    public DbSet<Server> Servers { get; set; }
 
     public string? GetConnectionString();
     public Task<int> SaveChangesAsync();
