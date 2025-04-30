@@ -1,17 +1,11 @@
-﻿using System;
-using Opc.Ua.Client;
+﻿using Type = OpcUaClient.Domain.Enums.Type;
 
-namespace OpcUaClient.Model;
+namespace OpcUaClient.Models.TagModels;
 
-public class TagClass
+public class TagUpdateModel
 {
-
-    public TagClass(string displayName, string nodeID)
-    {
-        DisplayName = displayName;
-        NodeID = nodeID;
-
-    }
+    public Guid Id { get; set; }
+    public string Name { get; set; }
 
     public DateTime LastUpdatedTime { get; set; }
 
@@ -22,7 +16,8 @@ public class TagClass
 
     public string? LastGoodValue { get; set; }
     public string? CurrentValue { get; set; }
-    public string NodeID { get; set; }
+    public string NodeId { get; set; }
 
     public string DisplayName { get; set; }
+    public Guid ServerId { get; set; }
 }
