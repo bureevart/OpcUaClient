@@ -4,13 +4,15 @@ using Microsoft.AspNetCore.Mvc;
 using OpcUaClient.Domain.Interfaces.Providers;
 using OpcUaClient.Domain.Models;
 using OpcUaClient.Models.ServerModels;
+using OpcUaClient.Services.Interfaces;
 
 namespace OpcUaClient.Controllers;
 
 public class ServerController(
     IServerCrudProvider crudProvider,
     IMapper mapper,
-    IValidator<Server> validator
+    IValidator<Server> validator,
+    IOpcUaHub opcUaHub
 ) : BaseEntityController<Server>
 {
     [HttpGet]
@@ -42,6 +44,8 @@ public class ServerController(
         }
         
         await crudProvider.Create(obj);
+
+        opcUaHub.CreateServer(obj.ServerAddress, obj.ServerPortNumber);
         
         return obj.Id;
     }
@@ -89,6 +93,9 @@ public class ServerController(
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<Guid>> Delete(Guid id)
     {
+        var server = await crudProvider.Get(id, asNoTracking: true);
+        opcUaHub.RemoveServer(server.ServerAddress, server.ServerPortNumber);
+        
         var result = await crudProvider.Delete(id);
 
         return result;

@@ -45,7 +45,7 @@ namespace OpcUaClient.DataAccessLayer.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Servers");
+                    b.ToTable("Server", (string)null);
                 });
 
             modelBuilder.Entity("OpcUaClient.Domain.Models.Tag", b =>
@@ -78,7 +78,7 @@ namespace OpcUaClient.DataAccessLayer.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("ServerId")
+                    b.Property<Guid>("ServerId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("StatusCode")
@@ -94,9 +94,13 @@ namespace OpcUaClient.DataAccessLayer.Migrations
 
             modelBuilder.Entity("OpcUaClient.Domain.Models.Tag", b =>
                 {
-                    b.HasOne("OpcUaClient.Domain.Models.Server", null)
+                    b.HasOne("OpcUaClient.Domain.Models.Server", "Server")
                         .WithMany("Tags")
-                        .HasForeignKey("ServerId");
+                        .HasForeignKey("ServerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Server");
                 });
 
             modelBuilder.Entity("OpcUaClient.Domain.Models.Server", b =>

@@ -1,6 +1,7 @@
 using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using OpcUaClient.Domain.Interfaces.Providers;
 using OpcUaClient.Domain.Models;
 using OpcUaClient.Models.TagModels;
@@ -8,7 +9,7 @@ using OpcUaClient.Services.Interfaces;
 
 namespace OpcUaClient.Controllers;
 
-public class TagController(ITagCrudProvider crudProvider, IValidator<Tag> validator, IMapper mapper, IOpcUaService opcUaService) : BaseEntityController<Tag>
+public class TagController(ITagCrudProvider crudProvider, IValidator<Tag> validator, IMapper mapper, IOpcUaHub opcUaHub) : BaseEntityController<Tag>
 {
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -39,8 +40,10 @@ public class TagController(ITagCrudProvider crudProvider, IValidator<Tag> valida
         }
         
         await crudProvider.Create(obj);
+
+        var updTag = await crudProvider.Get(obj.Id, o => o.Include(t => t.Server), true);
         
-        opcUaService.AddMonitoringItem(obj);
+        opcUaHub.AddTag(updTag.Server.ServerAddress, updTag.Server.ServerPortNumber ,updTag);
         return obj.Id;
     }
     
@@ -91,6 +94,10 @@ public class TagController(ITagCrudProvider crudProvider, IValidator<Tag> valida
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<Guid>> Delete(Guid id)
     {
+        var updTag = await crudProvider.Get(id, o => o.Include(t => t.Server), true);
+        
+        opcUaHub.RemoveTag(updTag.Server.ServerAddress, updTag.Server.ServerPortNumber, updTag.DisplayName);
+        
         return await crudProvider.Delete(id);
     }
     

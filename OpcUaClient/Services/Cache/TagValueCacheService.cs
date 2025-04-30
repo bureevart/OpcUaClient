@@ -29,4 +29,11 @@ public class TagCacheService(IMemoryCache memoryCache, CacheSettings settings)
             tag,
             TimeSpan.FromMinutes(_settings.DefaultExpirationTimeInMinutes));
     }
+
+    public void DeleteTag(string displayName)
+    {
+        var cacheKey = $"{_tagPrefix}{displayName}";
+
+        _cache.Remove(cacheKey);
+    }
 }

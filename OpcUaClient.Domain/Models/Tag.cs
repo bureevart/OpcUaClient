@@ -25,6 +25,7 @@ public class Tag : Entity
     public string? LastGoodValue { get; set; }
     public string? CurrentValue { get; set; }
     public string NodeId { get; set; }
-
     public string DisplayName { get; set; }
+    public Server Server { get; set; }
+    public Guid ServerId { get; set; }
 }

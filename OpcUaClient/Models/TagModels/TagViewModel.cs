@@ -19,4 +19,5 @@ public class TagViewModel
     public string NodeId { get; set; }
 
     public string DisplayName { get; set; }
+    public Guid ServerId { get; set; }
 }

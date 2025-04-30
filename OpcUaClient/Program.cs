@@ -43,7 +43,7 @@ builder.Services.AddMassTransit(x =>
 });
 
 builder.Services.AddCache(builder.Configuration);
-builder.Services.AddSingleton<IOpcUaService, OpcUaService>();
+builder.Services.AddOpcUa();
 
 var app = builder.Build();
 

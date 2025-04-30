@@ -8,6 +8,9 @@ using OpcUaClient.Domain.Interfaces.Services;
 using OpcUaClient.Domain.Providers;
 using OpcUaClient.Domain.Validation;
 using OpcUaClient.Services.Cache;
+using OpcUaClient.Services.Interfaces;
+using OpcUaClient.Services.OpcUa;
+using OpcUaClient.Services.OpcUa.OpcUaWorker;
 using Serilog;
 using Serilog.Events;
 
@@ -96,6 +99,14 @@ public static class ServiceCollectionExtensions
 
             return memoryCacheService;
         });
+    }
+    
+    public static IServiceCollection AddOpcUa(this IServiceCollection
+        services)
+    {
+        services.AddSingleton<IOpcUaHub, OpcUaHubService>();
+        
+        return services;
     }
     
     private static Services.Cache.Configurations.CacheSettings GetCacheSettings(IConfiguration configuration)
